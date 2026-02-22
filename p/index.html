@@ -61,7 +61,8 @@
 
         // URL에서 linkFid 추출
         const pathParts = window.location.pathname.split('/');
-        const linkFid = pathParts.pop() || pathParts.pop(); // 마지막 슬래시 대응
+        const urlParams = new URLSearchParams(window.location.search);
+        const linkFid = urlParams.get('fid'); // ?fid=test 에서 test를 가져옴
 
         let cachedLinkData = null;
 
