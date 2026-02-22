@@ -6,15 +6,19 @@
     <title>소시 - 프로필 확인</title>
     <style>
         body { font-family: sans-serif; background-color: #F9F7F4; color: #4A342E; margin: 0; }
-        .container { padding: 20.dp; display: flex; flex-direction: column; align-items: center; }
+        .container { padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; }
-        .btn-rose { background-color: #FF6B6B; color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        .btn-rose { background-color: #FF6B6B; color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-rose:disabled { background-color: #ccc; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .error-text { color: #FF6B6B; font-size: 12px; display: none; }
-        #profile-content { display: none; } /* 처음엔 숨김 */
+        .error-text { color: #FF6B6B; font-size: 12px; display: none; margin-bottom: 10px; }
+        #profile-content, #password-section { display: none; } /* 데이터 로드 전까지 숨김 */
+        .loading { margin-top: 100px; color: #888; }
     </style>
 </head>
 <body>
+
+    <div id="loading-text" class="container loading">데이터를 불러오는 중...</div>
 
     <div id="password-section" class="container">
         <div class="card">
@@ -22,7 +26,7 @@
             <p style="color:gray; font-size:14px; text-align:center">이 프로필은 비밀번호로 보호되어 있습니다.</p>
             <input type="password" id="pw-input" placeholder="비밀번호를 입력하세요">
             <p id="pw-error" class="error-text">비밀번호가 일치하지 않습니다.</p>
-            <button class="btn-rose" onclick="checkPassword()">확인</button>
+            <button class="btn-rose" id="pw-submit-btn">확인</button>
         </div>
     </div>
 
@@ -30,42 +34,115 @@
         <div class="card">
             <h1 id="user-nickname"></h1>
             <p id="user-intro"></p>
-            <hr>
+            <hr style="border: 0.5px solid #eee; margin: 20px 0;">
             <button class="btn-rose" onclick="openStore()">소시 앱에서 더 자세히 보기</button>
         </div>
     </div>
 
-    <script>
-        // 현재 URL에서 link_fid 추출
-        const params = new URLSearchParams(window.location.search);
-        // 실제 운영시는 https://sosi.app/p/FID 형태이므로 파싱 로직이 필요함
-        const linkFid = window.location.pathname.split('/').pop();
+    <script type="module">
+        // Firebase SDK 임포트
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        async function checkPassword() {
-            const input = document.getElementById('pw-input').value;
-            const errorText = document.getElementById('pw-error');
+        // 전달받은 Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPY3yfpS226YQe_0XYNxM5wf7VHWwkJWc",
+            authDomain: "sosi-ce9f9.firebaseapp.com",
+            projectId: "sosi-ce9f9",
+            storageBucket: "sosi-ce9f9.firebasestorage.app",
+            messagingSenderId: "1060523826286",
+            appId: "1:1060523826286:web:f4ff8780db2b936767da7f",
+            measurementId: "G-6HF7300T70"
+        };
 
-            // TODO: 여기서 Firebase 연동하여 실제 비밀번호와 비교
-            // 지금은 임시로 '1234'라고 가정
-            if (input === "1234") {
-                document.getElementById('password-section').style.display = 'none';
-                document.getElementById('profile-content').style.display = 'block';
-                loadProfileData();
-            } else {
-                errorText.style.display = 'block';
+        // 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // URL에서 linkFid 추출
+        const pathParts = window.location.pathname.split('/');
+        const linkFid = pathParts.pop() || pathParts.pop(); // 마지막 슬래시 대응
+
+        let cachedLinkData = null;
+
+        async function init() {
+            if (!linkFid || linkFid === 'p') {
+                document.getElementById('loading-text').innerText = "유효하지 않은 링크입니다.";
+                return;
+            }
+
+            try {
+                // Firestore에서 sosi_links 컬렉션의 linkFid 문서 가져오기
+                const docRef = doc(db, "sosi_links", linkFid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    cachedLinkData = docSnap.data();
+                    document.getElementById('loading-text').style.display = 'none';
+
+                    // 1. 조회수 초과 확인
+                    if (cachedLinkData.currentRead >= cachedLinkData.limitRead) {
+                        alert("조회 가능 횟수를 초과한 링크입니다.");
+                        document.getElementById('loading-text').style.display = 'block';
+                        document.getElementById('loading-text').innerText = "만료된 링크입니다.";
+                        return;
+                    }
+
+                    // 2. 비밀번호 여부에 따른 화면 분기
+                    if (cachedLinkData.passwordEnable) {
+                        document.getElementById('password-section').style.display = 'flex';
+                    } else {
+                        showProfile();
+                        updateViewCount(); // 비밀번호 없으면 바로 조회수 증가
+                    }
+                } else {
+                    document.getElementById('loading-text').innerText = "존재하지 않는 프로필입니다.";
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading-text').innerText = "오류가 발생했습니다.";
             }
         }
 
-        function loadProfileData() {
-            // 여기에 API나 Firebase에서 가져온 데이터를 채워넣음
-            document.getElementById('user-nickname').innerText = "지은";
-            document.getElementById('user-intro').innerText = "반가워요! 운동과 여행을 좋아해요.";
+        // 프로필 데이터 표시
+        function showProfile() {
+            const data = cachedLinkData;
+            document.getElementById('profile-content').style.display = 'flex';
+            document.getElementById('user-nickname').innerText = data.user.nickname;
+            document.getElementById('user-intro').innerText = data.user.oneLineIntro || "안녕하세요!";
         }
 
-        function openStore() {
-            // 앱이 있으면 실행, 없으면 마켓으로
-            window.location.href = `intent://sosi.app/p/${linkFid}#Intent;scheme=https;package=com.vlm.sosi;end`;
+        // 조회수 업데이트 로직
+        async function updateViewCount() {
+            try {
+                const docRef = doc(db, "sosi_links", linkFid);
+                await updateDoc(docRef, { currentRead: increment(1) });
+            } catch (e) {
+                console.error("조회수 업데이트 실패:", e);
+            }
         }
+
+        // 비밀번호 확인 버튼 이벤트
+        document.getElementById('pw-submit-btn').onclick = async () => {
+            const input = document.getElementById('pw-input').value;
+            const errorText = document.getElementById('pw-error');
+
+            if (input === cachedLinkData.password) {
+                document.getElementById('password-section').style.display = 'none';
+                showProfile();
+                await updateViewCount();
+            } else {
+                errorText.style.display = 'block';
+            }
+        };
+
+        // 전역 함수로 등록 (HTML onclick에서 사용 가능하도록)
+        window.openStore = () => {
+            const intentUrl = `intent://sosi.app/p/${linkFid}#Intent;scheme=https;package=com.vlm.sosi;end`;
+            window.location.href = intentUrl;
+        };
+
+        init();
     </script>
 </body>
 </html>
