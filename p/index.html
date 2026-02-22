@@ -62,7 +62,18 @@
         // URL에서 linkFid 추출
         const pathParts = window.location.pathname.split('/');
         const urlParams = new URLSearchParams(window.location.search);
-        const linkFid = urlParams.get('fid'); // ?fid=test 에서 test를 가져옴
+        let linkFid = urlParams.get('fid'); // 1. 우선 ?fid= 값 확인
+        
+        if (!linkFid) {
+            // 2. 만약 쿼리 스트링이 없다면 경로의 마지막 부분을 가져옴
+            const pathParts = window.location.pathname.split('/').filter(part => part !== "");
+            const lastPart = pathParts[pathParts.length - 1];
+            
+            // 마지막 파트가 'p'가 아닐 때만 FID로 간주 (즉, /p/Test 형태일 때)
+            if (lastPart !== 'p' && lastPart !== 'index.html') {
+                linkFid = lastPart;
+            }
+        }
 
         let cachedLinkData = null;
 
