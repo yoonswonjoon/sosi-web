@@ -67,41 +67,37 @@
         let cachedLinkData = null;
 
         async function init() {
-            if (!linkFid || linkFid === 'p') {
-                document.getElementById('loading-text').innerText = "유효하지 않은 링크입니다.";
+        // [디버깅용] 주소창에서 fid를 못 읽었을 때
+            if (!linkFid) {
+                document.getElementById('loading-text').innerText = "유효하지 않은 링크입니다. (FID 없음)";
                 return;
             }
-
+    
             try {
-                // Firestore에서 sosi_links 컬렉션의 linkFid 문서 가져오기
                 const docRef = doc(db, "sosi_links", linkFid);
                 const docSnap = await getDoc(docRef);
-
+    
                 if (docSnap.exists()) {
                     cachedLinkData = docSnap.data();
                     document.getElementById('loading-text').style.display = 'none';
-
-                    // 1. 조회수 초과 확인
+                    
+                    // 조회수 제한 체크 등 후속 로직 실행
                     if (cachedLinkData.currentRead >= cachedLinkData.limitRead) {
-                        alert("조회 가능 횟수를 초과한 링크입니다.");
                         document.getElementById('loading-text').style.display = 'block';
-                        document.getElementById('loading-text').innerText = "만료된 링크입니다.";
+                        document.getElementById('loading-text').innerText = "조회 횟수가 초과된 링크입니다.";
                         return;
                     }
-
-                    // 2. 비밀번호 여부에 따른 화면 분기
+    
                     if (cachedLinkData.passwordEnable) {
                         document.getElementById('password-section').style.display = 'flex';
                     } else {
                         showProfile();
-                        updateViewCount(); // 비밀번호 없으면 바로 조회수 증가
                     }
                 } else {
                     document.getElementById('loading-text').innerText = "존재하지 않는 프로필입니다.";
                 }
             } catch (e) {
-                console.error(e);
-                document.getElementById('loading-text').innerText = "오류가 발생했습니다.";
+                document.getElementById('loading-text').innerText = "데이터 로드 오류: " + e.message;
             }
         }
 
