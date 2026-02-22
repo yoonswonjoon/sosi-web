@@ -183,7 +183,7 @@
             }
 
             try {
-                const docSnap = await getDoc(doc(db, "sosi_links", linkFid));
+                const docSnap = await getDoc(doc(db, "links", linkFid));
                 if (docSnap.exists()) {
                     cachedData = docSnap.data();
                     
@@ -246,7 +246,7 @@
                 document.getElementById('password-dialog').style.display = 'none';
                 renderProfile();
                 // Update View Count
-                await updateDoc(doc(db, "sosi_links", linkFid), { currentRead: increment(1) });
+                await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
             } else {
                 document.getElementById('pw-error').style.display = 'block';
             }
