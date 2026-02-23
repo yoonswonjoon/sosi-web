@@ -24,13 +24,16 @@
 
         .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; }
 
-        /* Compose Card 스타일 */
+        /* 상태 표시 영역 */
+        #status-area { padding-top: 100px; display: flex; flex-direction: column; align-items: center; }
+
+        /* Card 디자인 */
         .card { 
             background: var(--white); border-radius: 28px; width: 92%; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin-top: 20px; overflow: hidden;
         }
 
-        /* Image Slider (HorizontalPager) */
+        /* Image Slider */
         .image-slider {
             width: 100%; height: 500px; display: flex; 
             overflow-x: auto; scroll-snap-type: x mandatory; background: #eee;
@@ -44,17 +47,14 @@
         .age { font-size: 22px; color: var(--text-sub); }
         .intro { font-size: 16px; color: var(--text-sub); margin-bottom: 24px; line-height: 1.5; }
 
-        /* Compose Section Title */
         .section-title { font-size: 18px; font-weight: 700; margin: 32px 0 16px 0; color: var(--sosi-soft-brown); display: flex; align-items: center; gap: 6px; }
         .section-title::before { content: ''; width: 4px; height: 16px; background: var(--sosi-rose); border-radius: 2px; }
 
-        /* Info Grid */
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .info-item { display: flex; flex-direction: column; }
         .info-label { font-size: 13px; color: var(--text-sub); margin-bottom: 4px; }
         .info-value { font-size: 16px; font-weight: 600; }
 
-        /* Tags (Hobby & Personality) */
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
         .tag { background: #F5F5F5; padding: 8px 14px; border-radius: 12px; font-size: 14px; font-weight: 500; }
         .tag-personality { background: #FFF0F0; color: var(--sosi-rose); }
@@ -65,82 +65,82 @@
             font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 40px;
         }
 
-        /* Password Dialog (Compose Dialog) */
+        /* Password Dialog */
         .dialog-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
         .dialog-card { background: white; border-radius: 24px; width: 85%; padding: 32px; text-align: center; box-sizing: border-box; }
         
-        .loading-spinner { margin-top: 100px; border: 4px solid #f3f3f3; border-top: 4px solid var(--sosi-rose); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--sosi-rose); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="status-area" class="container">
-        <div class="loading-spinner"></div>
-        <p style="margin-top:20px; color:#888;">프로필을 불러오고 있습니다...</p>
-    </div>
-
-    <div id="password-dialog" class="dialog-overlay">
-        <div class="dialog-card">
-            <h2 style="margin:0; font-size:20px;">비밀번호 확인</h2>
-            <p style="color:var(--text-sub); font-size:14px; margin:10px 0 24px 0;">이 프로필은 비밀번호로 보호되어 있습니다.</p>
-            <input type="password" id="pw-input" style="width:100%; padding:14px; border:1.5px solid #eee; border-radius:12px; font-size:16px; box-sizing:border-box;" placeholder="비밀번호 입력">
-            <p id="pw-error" style="color:var(--sosi-rose); font-size:13px; display:none; margin-top:10px;">비밀번호가 일치하지 않습니다.</p>
-            <button class="btn-rose" id="pw-submit-btn">확인</button>
+    <div class="container">
+        <div id="status-area" class="container">
+            <div id="loading-spinner" class="loading-spinner"></div>
+            <p id="status-msg" style="margin-top:20px; color:var(--text-sub); text-align:center; padding: 0 20px; font-weight: 500;">
+                프로필을 불러오고 있습니다...
+            </p>
+            <button id="btn-retry" class="btn-rose" style="display:none; width:auto; padding:12px 24px; margin-top:20px;" onclick="location.reload()">
+                다시 시도
+            </button>
         </div>
-    </div>
 
-    <div id="status-area" class="container">
-    <div id="loading-icon" class="loading-spinner"></div>
-        <p id="status-msg" style="margin-top:20px; color:var(--text-sub); text-align:center; padding: 0 20px;"></p>
-        <button id="btn-retry" class="btn-rose" style="display:none; width:auto; padding:12px 24px; margin-top:20px;" onclick="location.reload()">다시 시도</button>
-    </div>    
-    <div id="main-content" class="container" style="display:none;">
-        <div class="card">
-            <div id="image-pager" class="image-slider"></div>
-            
-            <div class="info-section">
-                <div class="nickname-row">
-                    <span id="txt-nickname" class="nickname"></span>
-                    <span id="txt-age" class="age"></span>
+        <div id="password-dialog" class="dialog-overlay">
+            <div class="dialog-card">
+                <h2 style="margin:0; font-size:20px;">비밀번호 확인</h2>
+                <p style="color:var(--text-sub); font-size:14px; margin:10px 0 24px 0;">이 프로필은 비밀번호로 보호되어 있습니다.</p>
+                <input type="password" id="pw-input" style="width:100%; padding:14px; border:1.5px solid #eee; border-radius:12px; font-size:16px; box-sizing:border-box;" placeholder="비밀번호 입력">
+                <p id="pw-error" style="color:var(--sosi-rose); font-size:13px; display:none; margin-top:10px;">비밀번호가 일치하지 않습니다.</p>
+                <button class="btn-rose" id="pw-submit-btn">확인</button>
+            </div>
+        </div>
+
+        <div id="main-content" class="container" style="display:none;">
+            <div class="card">
+                <div id="image-pager" class="image-slider"></div>
+                <div class="info-section">
+                    <div class="nickname-row">
+                        <span id="txt-nickname" class="nickname"></span>
+                        <span id="txt-age" class="age"></span>
+                    </div>
+                    <p id="txt-intro" class="intro"></p>
+                    <div style="height:1px; background:var(--divider);"></div>
+
+                    <h3 class="section-title">기본 정보</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">지역</span><span id="txt-location" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">MBTI</span><span id="txt-mbti" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">키 / 체형</span><span id="txt-physical" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">종교</span><span id="txt-religion" class="info-value"></span></div>
+                    </div>
+
+                    <h3 class="section-title">직업 및 학력</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">직업</span><span id="txt-job" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">학력</span><span id="txt-edu" class="info-value"></span></div>
+                    </div>
+
+                    <h3 class="section-title">라이프스타일</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">음주</span><span id="txt-drinking" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">흡연</span><span id="txt-smoking" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">운동</span><span id="txt-exercise" class="info-value"></span></div>
+                        <div class="info-item"><span class="info-label">만남 목적</span><span id="txt-purpose" class="info-value"></span></div>
+                    </div>
+
+                    <h3 class="section-title">성격 및 취미</h3>
+                    <div id="tag-personality" class="tag-container"></div>
+                    <div id="tag-hobbies" class="tag-container" style="margin-top:12px;"></div>
+
+                    <h3 class="section-title">자기소개</h3>
+                    <p id="txt-self-intro" style="white-space: pre-wrap; line-height:1.7; font-size:16px; margin:0;"></p>
+
+                    <button class="btn-rose" onclick="openStore()">소시 앱에서 더 자세히 보기</button>
                 </div>
-                <p id="txt-intro" class="intro"></p>
-
-                <div style="height:1px; background:var(--divider);"></div>
-
-                <h3 class="section-title">기본 정보</h3>
-                <div class="info-grid">
-                    <div class="info-item"><span class="info-label">지역</span><span id="txt-location" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">MBTI</span><span id="txt-mbti" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">키 / 체형</span><span id="txt-physical" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">종교</span><span id="txt-religion" class="info-value"></span></div>
-                </div>
-
-                <h3 class="section-title">직업 및 학력</h3>
-                <div class="info-grid">
-                    <div class="info-item"><span class="info-label">직업</span><span id="txt-job" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">학력</span><span id="txt-edu" class="info-value"></span></div>
-                </div>
-
-                <h3 class="section-title">라이프스타일</h3>
-                <div class="info-grid">
-                    <div class="info-item"><span class="info-label">음주</span><span id="txt-drinking" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">흡연</span><span id="txt-smoking" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">운동</span><span id="txt-exercise" class="info-value"></span></div>
-                    <div class="info-item"><span class="info-label">만남 목적</span><span id="txt-purpose" class="info-value"></span></div>
-                </div>
-
-                <h3 class="section-title">성격 및 취미</h3>
-                <div id="tag-personality" class="tag-container"></div>
-                <div id="tag-hobbies" class="tag-container" style="margin-top:12px;"></div>
-
-                <h3 class="section-title">자기소개</h3>
-                <p id="txt-self-intro" style="white-space: pre-wrap; line-height:1.7; font-size:16px; margin:0;"></p>
-
-                <button class="btn-rose" onclick="openStore()">소시 앱에서 더 자세히 보기</button>
             </div>
         </div>
     </div>
@@ -148,8 +148,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    
-        // --- Enum Mappings ---
+
         const DESC = {
             BodyType: { SLIM_THIN: "마른편", NORMAL: "보통", CHUBBY: "통통한 편", MUSCULAR: "근육질", SLIM: "슬림", GLAMOUR: "글래머", NONE: "미선택" },
             EducationLevel: { HIGH_SCHOOL: "고졸", COLLEGE: "대졸(2/3년제)", UNIVERSITY: "대졸(4년제)", MASTER: "석사", DOCTOR: "박사", NONE: "미선택" },
@@ -173,7 +172,7 @@
                 GAMING: "게임", ANIMATION: "애니메이션", PET_CARE: "반려동물 케어", LANGUAGES: "외국어 공부", INVESTMENT: "재테크/투자", MEDITATION: "명상/요가"
             }
         };
-    
+
         const firebaseConfig = {
             apiKey: "AIzaSyCPY3yfpS226YQe_0XYNxM5wf7VHWwkJWc",
             authDomain: "sosi-ce9f9.firebaseapp.com",
@@ -182,129 +181,97 @@
             messagingSenderId: "1060523826286",
             appId: "1:1060523826286:web:f4ff8780db2b936767da7f"
         };
-    
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-    
+
         const urlParams = new URLSearchParams(window.location.search);
         let linkFid = urlParams.get('fid');
         if (!linkFid) {
             const pathParts = window.location.pathname.split('/').filter(p => p !== "" && p !== "sosi-web" && p !== "p" && p !== "index.html");
             linkFid = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
         }
-    
+
         let linkData = null;
-    
+
+        function showError(msg) {
+            document.getElementById('loading-spinner').style.display = 'none';
+            const msgTag = document.getElementById('status-msg');
+            msgTag.innerText = msg;
+            msgTag.style.color = "var(--sosi-soft-brown)";
+            document.getElementById('btn-retry').style.display = 'none';
+        }
+
+        function showLimitError(msg) {
+            document.getElementById('loading-spinner').style.display = 'none';
+            const msgTag = document.getElementById('status-msg');
+            msgTag.innerText = msg;
+            msgTag.style.color = "var(--sosi-rose)";
+            document.getElementById('btn-retry').style.display = 'block';
+        }
+
         async function init() {
             if (!linkFid) { showError("유효하지 않은 링크입니다."); return; }
             try {
                 const docSnap = await getDoc(doc(db, "links", linkFid)); 
                 if (docSnap.exists()) {
                     linkData = docSnap.data();
-                    
-                    // [추가] 조회 횟수 제한 체크
                     if (linkData.currentRead >= linkData.limitRead) {
                         showLimitError("조회 가능 횟수(" + linkData.limitRead + "회)를 초과한 링크입니다.");
                         return;
                     }
-        
                     document.getElementById('status-area').style.display = 'none';
                     if (linkData.passwordEnable) { 
                         document.getElementById('password-dialog').style.display = 'flex'; 
                     } else { 
                         renderAll(); 
-                        // 비밀번호가 없는 경우 바로 조회수 카운트 (선택 사항)
-                        // await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
                     }
-                } else { 
-                    showError("존재하지 않는 프로필입니다."); 
-                }
-            } catch (e) { 
-                showError("오류가 발생했습니다: " + e.message); 
-            }
+                } else { showError("존재하지 않는 프로필입니다."); }
+            } catch (e) { showError("오류가 발생했습니다: " + e.message); }
         }
 
-
-        function showLimitError(msg) {
-            document.getElementById('loading-icon').style.display = 'none';
-            const msgTag = document.getElementById('status-msg');
-            msgTag.innerText = msg;
-            msgTag.style.color = "var(--sosi-rose)"; // 강조 색상
-            document.getElementById('btn-retry').style.display = 'block'; // 재시도 버튼 노출
-        }
-        
         function renderAll() {
             const u = linkData.user;
             document.getElementById('main-content').style.display = 'flex';
-    
-            // 1. 이미지 렌더링
             const pager = document.getElementById('image-pager');
-            const imgs = u.images || [];
-            pager.innerHTML = imgs.length > 0 ? imgs.map(i => `<img src="${i.url}">`).join('') : '<div style="margin:auto; color:#ccc;">사진이 없습니다.</div>';
-    
-            // 2. 상단 기본 텍스트
+            pager.innerHTML = (u.images || []).map(i => `<img src="${i.url}">`).join('');
             document.getElementById('txt-nickname').innerText = u.nickname;
             const birthYear = parseInt(u.birthday.substring(0, 2));
             const fullYear = (birthYear > 30 ? 1900 : 2000) + birthYear;
             document.getElementById('txt-age').innerText = (2026 - fullYear + 1) + "세";
             document.getElementById('txt-intro').innerText = u.oneLineIntro || "안녕하세요!";
-    
-            // 3. 기본 정보 그리드 채우기
             const city = DESC.CITY[u.regionCity] || "";
             const dist = u.regionDistrict === "NONE" ? "" : u.regionDistrict;
             document.getElementById('txt-location').innerText = `${city} ${dist}`.trim();
             document.getElementById('txt-mbti').innerText = u.mbti === "NONE" ? "미선택" : u.mbti;
-            
             const height = u.physicalInfo.isHeightPrivate ? "비공개" : u.physicalInfo.height + "cm";
             const body = DESC.BodyType[u.physicalInfo.bodyType] || "미선택";
             document.getElementById('txt-physical').innerText = `${height} / ${body}`;
             document.getElementById('txt-religion').innerText = DESC.Religion[u.religion] || "미선택";
-    
-            // 4. 직업 및 학력 그리드
             document.getElementById('txt-job').innerText = (u.jobInfo.jobName || "미입력") + (u.jobInfo.jobCert ? " (인증)" : "");
             document.getElementById('txt-edu').innerText = `${u.education.schoolName || ""} (${DESC.EducationLevel[u.education.level] || ""})`;
-    
-            // 5. 라이프스타일 그리드
             document.getElementById('txt-drinking').innerText = DESC.Drinking[u.lifestyle.drinking] || "-";
             document.getElementById('txt-smoking').innerText = DESC.Smoking[u.lifestyle.smoking] || "-";
             document.getElementById('txt-exercise').innerText = DESC.Exercise[u.lifestyle.exercise] || "-";
             document.getElementById('txt-purpose').innerText = DESC.MeetingPurpose[u.purpose] || "-";
-    
-            // 6. 성격 및 취미 태그 렌더링 (매핑 적용)
-            const personalityContainer = document.getElementById('tag-personality');
-            personalityContainer.innerHTML = (u.personalityTraits || [])
-                .map(t => `<span class="tag tag-personality"># ${DESC.Personality[t] || t}</span>`)
-                .join('');
-    
-            const hobbyContainer = document.getElementById('tag-hobbies');
-            hobbyContainer.innerHTML = (u.hobbies || [])
-                .map(t => `<span class="tag">${DESC.Hobby[t] || t}</span>`)
-                .join('');
-    
-            // 7. 자기소개
+            document.getElementById('tag-personality').innerHTML = (u.personalityTraits || []).map(t => `<span class="tag tag-personality"># ${DESC.Personality[t] || t}</span>`).join('');
+            document.getElementById('tag-hobbies').innerHTML = (u.hobbies || []).map(t => `<span class="tag">${DESC.Hobby[t] || t}</span>`).join('');
             document.getElementById('txt-self-intro').innerText = u.selfIntroduction || "소개글이 등록되지 않았습니다.";
         }
-    
-        function showError(msg) {
-            document.getElementById('status-area').querySelector('.loading-spinner').style.display = 'none';
-            document.getElementById('status-msg').innerText = msg;
-        }
-    
+
         document.getElementById('pw-submit-btn').onclick = async () => {
             const input = document.getElementById('pw-input').value;
             if (input === linkData.password) {
                 document.getElementById('password-dialog').style.display = 'none';
                 renderAll();
                 await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
-            } else {
-                document.getElementById('pw-error').style.display = 'block';
-            }
+            } else { document.getElementById('pw-error').style.display = 'block'; }
         };
-    
+
         window.openStore = () => {
             window.location.href = `intent://yoonswonjoon.github.io/sosi-web/p/${linkFid}#Intent;scheme=https;package=com.vlm.sosi;end`;
         };
-    
+
         init();
     </script>
 </body>
