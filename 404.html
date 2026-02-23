@@ -143,8 +143,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // --- Enum Mappings (앱의 description과 일치시킴) ---
+    
+        // --- Enum Mappings ---
         const DESC = {
             BodyType: { SLIM_THIN: "마른편", NORMAL: "보통", CHUBBY: "통통한 편", MUSCULAR: "근육질", SLIM: "슬림", GLAMOUR: "글래머", NONE: "미선택" },
             EducationLevel: { HIGH_SCHOOL: "고졸", COLLEGE: "대졸(2/3년제)", UNIVERSITY: "대졸(4년제)", MASTER: "석사", DOCTOR: "박사", NONE: "미선택" },
@@ -154,8 +154,6 @@
             Religion: { NON: "무교", CHRISTIAN: "기독교", CATHOLICISM: "천주교", BUDDHISM: "불교", WON_BUDDHISM: "원불교", ETC: "기타", NONE: "선택안함" },
             MeetingPurpose: { FOR_MARRIAGE: "결혼 전제 만남", START_WITH_DATING: "연애부터 시작", GOOD_RELATIONSHIP: "좋은 인연", NONE: "미선택" },
             CITY: { SEOUL: "서울", INCHEON: "인천", GYEONGGI: "경기", NONE: "선택" },
-            
-            // [추가] 성격 및 취미 매핑 (이미지_c8247d.png 대응)
             Personality: {
                 EXTROVERTED: "활발한", INTROVERTED: "차분한", SPONTANEOUS: "즉흥적인", PLANNED: "계획적인", EMOTIONAL: "감성적인", LOGICAL: "이성적인",
                 SENSE: "센스있는", HUMOROUS: "유머러스한", GENTLE: "다정한", HONEST: "솔직한", MANNERS: "예의바른", CONFIDENT: "자존감 높은", POSITIVE: "긍정적인",
@@ -169,8 +167,8 @@
                 TRAVEL_DOMESTIC: "국내 여행", TRAVEL_ABROAD: "해외 여행", CAMPING: "캠핑/차박", DRIVING: "드라이브", WALKING: "산책",
                 GAMING: "게임", ANIMATION: "애니메이션", PET_CARE: "반려동물 케어", LANGUAGES: "외국어 공부", INVESTMENT: "재테크/투자", MEDITATION: "명상/요가"
             }
-        };    
-
+        };
+    
         const firebaseConfig = {
             apiKey: "AIzaSyCPY3yfpS226YQe_0XYNxM5wf7VHWwkJWc",
             authDomain: "sosi-ce9f9.firebaseapp.com",
@@ -179,23 +177,23 @@
             messagingSenderId: "1060523826286",
             appId: "1:1060523826286:web:f4ff8780db2b936767da7f"
         };
-
+    
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+    
         const urlParams = new URLSearchParams(window.location.search);
         let linkFid = urlParams.get('fid');
         if (!linkFid) {
             const pathParts = window.location.pathname.split('/').filter(p => p !== "" && p !== "sosi-web" && p !== "p" && p !== "index.html");
             linkFid = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
         }
-
+    
         let linkData = null;
-
+    
         async function init() {
             if (!linkFid) { showError("유효하지 않은 링크입니다."); return; }
             try {
-                const docSnap = await getDoc(doc(db, "links", linkFid));
+                const docSnap = await getDoc(doc(db, "sosi_links", linkFid)); // 컬렉션 명 sosi_links 확인
                 if (docSnap.exists()) {
                     linkData = docSnap.data();
                     if (linkData.currentRead >= linkData.limitRead) {
@@ -208,14 +206,45 @@
                 } else { showError("존재하지 않는 프로필입니다."); }
             } catch (e) { showError("오류: " + e.message); }
         }
-
+    
         function renderAll() {
             const u = linkData.user;
             document.getElementById('main-content').style.display = 'flex';
-            
-            // ... 이미지 및 기본 정보 렌더링 생략 ...
     
-            // [수정] 성격 및 취미 태그 렌더링 (매핑 적용)
+            // 1. 이미지 렌더링
+            const pager = document.getElementById('image-pager');
+            const imgs = u.images || [];
+            pager.innerHTML = imgs.length > 0 ? imgs.map(i => `<img src="${i.url}">`).join('') : '<div style="margin:auto; color:#ccc;">사진이 없습니다.</div>';
+    
+            // 2. 상단 기본 텍스트
+            document.getElementById('txt-nickname').innerText = u.nickname;
+            const birthYear = parseInt(u.birthday.substring(0, 2));
+            const fullYear = (birthYear > 30 ? 1900 : 2000) + birthYear;
+            document.getElementById('txt-age').innerText = (2026 - fullYear + 1) + "세";
+            document.getElementById('txt-intro').innerText = u.oneLineIntro || "안녕하세요!";
+    
+            // 3. 기본 정보 그리드 채우기
+            const city = DESC.CITY[u.regionCity] || "";
+            const dist = u.regionDistrict === "NONE" ? "" : u.regionDistrict;
+            document.getElementById('txt-location').innerText = `${city} ${dist}`.trim();
+            document.getElementById('txt-mbti').innerText = u.mbti === "NONE" ? "미선택" : u.mbti;
+            
+            const height = u.physicalInfo.isHeightPrivate ? "비공개" : u.physicalInfo.height + "cm";
+            const body = DESC.BodyType[u.physicalInfo.bodyType] || "미선택";
+            document.getElementById('txt-physical').innerText = `${height} / ${body}`;
+            document.getElementById('txt-religion').innerText = DESC.Religion[u.religion] || "미선택";
+    
+            // 4. 직업 및 학력 그리드
+            document.getElementById('txt-job').innerText = (u.jobInfo.jobName || "미입력") + (u.jobInfo.jobCert ? " (인증)" : "");
+            document.getElementById('txt-edu').innerText = `${u.education.schoolName || ""} (${DESC.EducationLevel[u.education.level] || ""})`;
+    
+            // 5. 라이프스타일 그리드
+            document.getElementById('txt-drinking').innerText = DESC.Drinking[u.lifestyle.drinking] || "-";
+            document.getElementById('txt-smoking').innerText = DESC.Smoking[u.lifestyle.smoking] || "-";
+            document.getElementById('txt-exercise').innerText = DESC.Exercise[u.lifestyle.exercise] || "-";
+            document.getElementById('txt-purpose').innerText = DESC.MeetingPurpose[u.purpose] || "-";
+    
+            // 6. 성격 및 취미 태그 렌더링 (매핑 적용)
             const personalityContainer = document.getElementById('tag-personality');
             personalityContainer.innerHTML = (u.personalityTraits || [])
                 .map(t => `<span class="tag tag-personality"># ${DESC.Personality[t] || t}</span>`)
@@ -226,29 +255,30 @@
                 .map(t => `<span class="tag">${DESC.Hobby[t] || t}</span>`)
                 .join('');
     
+            // 7. 자기소개
             document.getElementById('txt-self-intro').innerText = u.selfIntroduction || "소개글이 등록되지 않았습니다.";
         }
-
+    
         function showError(msg) {
             document.getElementById('status-area').querySelector('.loading-spinner').style.display = 'none';
             document.getElementById('status-msg').innerText = msg;
         }
-
+    
         document.getElementById('pw-submit-btn').onclick = async () => {
             const input = document.getElementById('pw-input').value;
             if (input === linkData.password) {
                 document.getElementById('password-dialog').style.display = 'none';
                 renderAll();
-                await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
+                await updateDoc(doc(db, "sosi_links", linkFid), { currentRead: increment(1) });
             } else {
                 document.getElementById('pw-error').style.display = 'block';
             }
         };
-
+    
         window.openStore = () => {
             window.location.href = `intent://yoonswonjoon.github.io/sosi-web/p/${linkFid}#Intent;scheme=https;package=com.vlm.sosi;end`;
         };
-
+    
         init();
     </script>
 </body>
