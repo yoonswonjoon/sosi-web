@@ -93,6 +93,11 @@
         </div>
     </div>
 
+    <div id="status-area" class="container">
+    <div id="loading-icon" class="loading-spinner"></div>
+        <p id="status-msg" style="margin-top:20px; color:var(--text-sub); text-align:center; padding: 0 20px;"></p>
+        <button id="btn-retry" class="btn-rose" style="display:none; width:auto; padding:12px 24px; margin-top:20px;" onclick="location.reload()">다시 시도</button>
+    </div>    
     <div id="main-content" class="container" style="display:none;">
         <div class="card">
             <div id="image-pager" class="image-slider"></div>
@@ -193,20 +198,41 @@
         async function init() {
             if (!linkFid) { showError("유효하지 않은 링크입니다."); return; }
             try {
-                const docSnap = await getDoc(doc(db, "links", linkFid)); // 컬렉션 명 links 확인
+                const docSnap = await getDoc(doc(db, "links", linkFid)); 
                 if (docSnap.exists()) {
                     linkData = docSnap.data();
+                    
+                    // [추가] 조회 횟수 제한 체크
                     if (linkData.currentRead >= linkData.limitRead) {
-                        showError("조회 가능 횟수를 초과했습니다.");
+                        showLimitError("조회 가능 횟수(" + linkData.limitRead + "회)를 초과한 링크입니다.");
                         return;
                     }
+        
                     document.getElementById('status-area').style.display = 'none';
-                    if (linkData.passwordEnable) { document.getElementById('password-dialog').style.display = 'flex'; } 
-                    else { renderAll(); }
-                } else { showError("존재하지 않는 프로필입니다."); }
-            } catch (e) { showError("오류: " + e.message); }
+                    if (linkData.passwordEnable) { 
+                        document.getElementById('password-dialog').style.display = 'flex'; 
+                    } else { 
+                        renderAll(); 
+                        // 비밀번호가 없는 경우 바로 조회수 카운트 (선택 사항)
+                        // await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
+                    }
+                } else { 
+                    showError("존재하지 않는 프로필입니다."); 
+                }
+            } catch (e) { 
+                showError("오류가 발생했습니다: " + e.message); 
+            }
         }
-    
+
+
+        function showLimitError(msg) {
+            document.getElementById('loading-icon').style.display = 'none';
+            const msgTag = document.getElementById('status-msg');
+            msgTag.innerText = msg;
+            msgTag.style.color = "var(--sosi-rose)"; // 강조 색상
+            document.getElementById('btn-retry').style.display = 'block'; // 재시도 버튼 노출
+        }
+        
         function renderAll() {
             const u = linkData.user;
             document.getElementById('main-content').style.display = 'flex';
