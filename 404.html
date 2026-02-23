@@ -193,7 +193,7 @@
         async function init() {
             if (!linkFid) { showError("유효하지 않은 링크입니다."); return; }
             try {
-                const docSnap = await getDoc(doc(db, "sosi_links", linkFid)); // 컬렉션 명 sosi_links 확인
+                const docSnap = await getDoc(doc(db, "links", linkFid)); // 컬렉션 명 links 확인
                 if (docSnap.exists()) {
                     linkData = docSnap.data();
                     if (linkData.currentRead >= linkData.limitRead) {
@@ -269,7 +269,7 @@
             if (input === linkData.password) {
                 document.getElementById('password-dialog').style.display = 'none';
                 renderAll();
-                await updateDoc(doc(db, "sosi_links", linkFid), { currentRead: increment(1) });
+                await updateDoc(doc(db, "links", linkFid), { currentRead: increment(1) });
             } else {
                 document.getElementById('pw-error').style.display = 'block';
             }
