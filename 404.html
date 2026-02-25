@@ -216,6 +216,17 @@
                 const docSnap = await getDoc(doc(db, "links", linkFid)); 
                 if (docSnap.exists()) {
                     linkData = docSnap.data();
+
+                    const currentTime = Date.now(); // 현재 UTC 시간 (ms)
+                    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+                    const expirationTime = linkData.createDate + (linkData.limitDate * ONE_DAY_MS);
+
+                    // 1. 시간 만료 체크
+                    if (currentTime > expirationTime) {
+                        showLimitError("유효 기간이 만료된 링크입니다.");
+                        return;
+                    }
+                    
                     if (linkData.currentRead >= linkData.limitRead) {
                         showLimitError("조회 가능 횟수(" + linkData.limitRead + "회)를 초과한 링크입니다.");
                         return;
